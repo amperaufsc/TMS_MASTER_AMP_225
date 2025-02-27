@@ -43,9 +43,12 @@
 CAN_HandleTypeDef hcan1;
 CAN_HandleTypeDef hcan2;
 
+TIM_HandleTypeDef htim3;
+
 /* USER CODE BEGIN PV */
 float tempBuffer[4];
 float maxTemp = 0;
+int timerFlag = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -53,11 +56,12 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_CAN1_Init(void);
 static void MX_CAN2_Init(void);
+static void MX_TIM3_Init(void);
 /* USER CODE BEGIN PFP */
 float maxVal(float *buffer, int size);
 void checkTemp(void);
 /* USER CODE END PFP */
-
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 /*CAN CONFIGURATION*/
@@ -68,8 +72,8 @@ CAN_RxHeaderTypeDef rxHeader;
 
 uint32_t txMailbox;
 
-uint8_t txData[2];
-uint8_t rxData[2];
+uint8_t txData[1];
+uint8_t rxData[4];
 /* USER CODE END 0 */
 
 /**
@@ -103,8 +107,19 @@ int main(void)
   MX_GPIO_Init();
   MX_CAN1_Init();
   MX_CAN2_Init();
+  MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
+  /*CAN CONFIGURATION*/
+  HAL_CAN_Start(&hcan2);
 
+  txHeader.DLC = 1;
+  txHeader.ExtId = 0;
+  txHeader.IDE = CAN_ID_STD;
+  txHeader.RTR = CAN_RTR_DATA;
+  txHeader.StdId = 0x40;
+  txHeader.TransmitGlobalTime = DISABLE;
+
+   txData[0] = 0x0;
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -115,6 +130,10 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
 	  checkTemp();
+	  if(timerFlag == 1){
+		  txData[0] = (uint8_t)maxTemp;
+		  timerFlag = 0;
+	  }
   }
   /* USER CODE END 3 */
 }
@@ -140,8 +159,8 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-  RCC_OscInitStruct.PLL.PLLM = 25;
-  RCC_OscInitStruct.PLL.PLLN = 336;
+  RCC_OscInitStruct.PLL.PLLM = 16;
+  RCC_OscInitStruct.PLL.PLLN = 192;
   RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
   RCC_OscInitStruct.PLL.PLLQ = 4;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
@@ -155,7 +174,7 @@ void SystemClock_Config(void)
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
 
   if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5) != HAL_OK)
@@ -266,6 +285,51 @@ static void MX_CAN2_Init(void)
 }
 
 /**
+  * @brief TIM3 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM3_Init(void)
+{
+
+  /* USER CODE BEGIN TIM3_Init 0 */
+
+  /* USER CODE END TIM3_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM3_Init 1 */
+
+  /* USER CODE END TIM3_Init 1 */
+  htim3.Instance = TIM3;
+  htim3.Init.Prescaler = 4200;
+  htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim3.Init.Period = 1000;
+  htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
+  if (HAL_TIM_Base_Init(&htim3) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim3, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim3, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM3_Init 2 */
+
+  /* USER CODE END TIM3_Init 2 */
+
+}
+
+/**
   * @brief GPIO Initialization Function
   * @param None
   * @retval None
@@ -341,6 +405,12 @@ void checkTemp(void){
 	if(maxTemp >= 55){
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, SET);
 	}
+}
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
+	if(HAL_CAN_AddTxMessage(&hcan2, &txHeader, txData, &txMailbox)!=HAL_OK){
+		Error_Handler();
+	}
+	timerFlag = 1;
 }
 /* USER CODE END 4 */
 

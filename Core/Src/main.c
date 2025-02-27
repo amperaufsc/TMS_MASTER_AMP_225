@@ -31,7 +31,14 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
+#define heartbeatID 0x1
+#define connectionFail1 1
+#define connectionFail2 2
+#define connectionFail3 3
+#define connectionFail4 4
+#define tempFail 5
+#define commTimeOut 1000
+#define commFail 6
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -48,7 +55,8 @@ TIM_HandleTypeDef htim3;
 /* USER CODE BEGIN PV */
 float tempBuffer[4];
 float maxTemp = 0;
-int timerFlag = 0;
+int timerFlag = 0, fail = 0;
+uint32_t lastHeartbeatTime1 = 0, lastHeartbeatTime2 = 0, lastHeartbeatTime3 = 0, lastHeartbeatTime4 = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -60,20 +68,26 @@ static void MX_TIM3_Init(void);
 /* USER CODE BEGIN PFP */
 float maxVal(float *buffer, int size);
 void checkTemp(void);
-/* USER CODE END PFP */
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim);
+void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan);
+void checkCommunication(void);
+/* USER CODE END PFP */
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-/*CAN CONFIGURATION*/
-void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan);
+/*CAN1 CONFIGURATION*/ //CAN 1 COMUNICA COM AS SLAVES
 
-CAN_TxHeaderTypeDef txHeader;
-CAN_RxHeaderTypeDef rxHeader;
+CAN_TxHeaderTypeDef tx1Header;
+CAN_RxHeaderTypeDef rx1Header;
+uint32_t tx1Mailbox;
+uint8_t tx1Data[1];
+uint8_t rx1Data[8];
 
-uint32_t txMailbox;
+/*CAN2 CONFIGURATION*/ //CAN 2 COMUNICA COM O PWT
 
-uint8_t txData[1];
-uint8_t rxData[4];
+CAN_TxHeaderTypeDef tx2Header;
+uint32_t tx2Mailbox;
+uint8_t tx2Data[2];
+
 /* USER CODE END 0 */
 
 /**
@@ -109,17 +123,33 @@ int main(void)
   MX_CAN2_Init();
   MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
-  /*CAN CONFIGURATION*/
+  /*CAN1 CONFIGURATION*/
+
+   HAL_CAN_Start(&hcan1);
+
+   tx1Header.DLC = 1;
+   tx1Header.ExtId = 0;
+   tx1Header.IDE = CAN_ID_STD;
+   tx1Header.RTR = CAN_RTR_DATA;
+   tx1Header.StdId = heartbeatID;
+   tx1Header.TransmitGlobalTime = DISABLE;
+
+    tx1Data[0] = 0x1;
+
+  /*CAN2 CONFIGURATION*/
+
   HAL_CAN_Start(&hcan2);
 
-  txHeader.DLC = 1;
-  txHeader.ExtId = 0;
-  txHeader.IDE = CAN_ID_STD;
-  txHeader.RTR = CAN_RTR_DATA;
-  txHeader.StdId = 0x40;
-  txHeader.TransmitGlobalTime = DISABLE;
+  tx2Header.DLC = 2;
+  tx2Header.ExtId = 0;
+  tx2Header.IDE = CAN_ID_STD;
+  tx2Header.RTR = CAN_RTR_DATA;
+  tx2Header.StdId = 0x40;
+  tx2Header.TransmitGlobalTime = DISABLE;
 
-   txData[0] = 0x0;
+   tx2Data[0] = 0x0;
+   tx2Data[1] = 0x0;
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -131,7 +161,9 @@ int main(void)
     /* USER CODE BEGIN 3 */
 	  checkTemp();
 	  if(timerFlag == 1){
-		  txData[0] = (uint8_t)maxTemp;
+		  tx2Data[0] = (uint8_t)maxTemp;
+		  tx2Data[1] = fail;
+		  checkCommunication();
 		  timerFlag = 0;
 	  }
   }
@@ -228,7 +260,6 @@ static void MX_CAN1_Init(void)
   canfilterconfig.SlaveStartFilterBank = 0;
 
   HAL_CAN_ConfigFilter(&hcan1, &canfilterconfig);
-  HAL_CAN_Start(&hcan1);
   HAL_CAN_ActivateNotification(&hcan1, CAN_IT_RX_FIFO0_MSG_PENDING);
 
   /* USER CODE END CAN1_Init 2 */
@@ -372,21 +403,26 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan){
-	if(HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &rxHeader, rxData)==HAL_OK){
-		switch(rxHeader.StdId)
+	if(HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &rx1Header, rx1Data)==HAL_OK){
+		switch(rx1Header.StdId)
 		{
 		case 0x1:
-			tempBuffer[0] = ((txData[0]) | (txData[1] << 8)/10);
-		default:
+			tempBuffer[0] = ((rx1Data[0]) | (rx1Data[1] << 8)) / 10;
+			lastHeartbeatTime1 = HAL_GetTick();
 			break;
 		case 0x2:
-			tempBuffer[1] = ((txData[0]) | (txData[1] << 8)/10);
+			tempBuffer[1] = ((rx1Data[0]) | (rx1Data[1] << 8)) / 10;
+			lastHeartbeatTime2 = HAL_GetTick();
 			break;
 		case 0x3:
-			tempBuffer[2] = ((txData[0]) | (txData[1] << 8)/10);
+			tempBuffer[2] = ((rx1Data[0]) | (rx1Data[1] << 8)) / 10;
+			lastHeartbeatTime3 = HAL_GetTick();
 			break;
 		case 0x4:
-			tempBuffer[3] = ((txData[0]) | (txData[1] << 8)/10);
+			tempBuffer[3] = ((rx1Data[0]) | (rx1Data[1] << 8)) / 10;
+			lastHeartbeatTime4 = HAL_GetTick();
+			break;
+		default:
 			break;
 		}
 	}
@@ -401,16 +437,43 @@ float maxVal(float *buffer, int size){
 	return max;
 }
 void checkTemp(void){
-	maxTemp = maxVal(tempBuffer);
+	maxTemp = maxVal(tempBuffer, 4);
 	if(maxTemp >= 55){
-		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, SET);
+		fail = tempFail;
+		Error_Handler();
 	}
 }
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
-	if(HAL_CAN_AddTxMessage(&hcan2, &txHeader, txData, &txMailbox)!=HAL_OK){
-		Error_Handler();
+	int count = 0;
+	while(HAL_CAN_AddTxMessage(&hcan2, &tx2Header, tx2Data, &tx2Mailbox)!=HAL_OK){
+		count++;
+		if(count >= 20){
+			fail = commFail;
+			Error_Handler();
+		}
 	}
 	timerFlag = 1;
+}
+void checkCommunication(void) {
+	if ((HAL_GetTick() - lastHeartbeatTime1) > commTimeOut) {
+		fail = connectionFail1;
+		Error_Handler();
+	}
+
+	if ((HAL_GetTick() - lastHeartbeatTime2) > commTimeOut) {
+		fail = connectionFail2;
+		Error_Handler();
+	}
+
+	if ((HAL_GetTick() - lastHeartbeatTime3) > commTimeOut) {
+		fail = connectionFail3;
+		Error_Handler();
+	}
+
+	if ((HAL_GetTick() - lastHeartbeatTime4) > commTimeOut) {
+		fail = connectionFail4;
+		Error_Handler();
+	}
 }
 /* USER CODE END 4 */
 
@@ -421,6 +484,9 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
 void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, SET);
+	tx2Data[1] = fail;
+	HAL_CAN_AddTxMessage(&hcan2, &tx2Header, tx2Data, &tx2Mailbox);
   /* User can add his own implementation to report the HAL error return state */
   __disable_irq();
   while (1)

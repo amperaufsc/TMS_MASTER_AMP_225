@@ -80,19 +80,19 @@ void HAL_MspInit(void)
 static uint32_t HAL_RCC_CAN1_CLK_ENABLED=0;
 
 /**
-* @brief CAN MSP Initialization
-* This function configures the hardware resources used in this example
-* @param hcan: CAN handle pointer
-* @retval None
-*/
+  * @brief CAN MSP Initialization
+  * This function configures the hardware resources used in this example
+  * @param hcan: CAN handle pointer
+  * @retval None
+  */
 void HAL_CAN_MspInit(CAN_HandleTypeDef* hcan)
 {
   GPIO_InitTypeDef GPIO_InitStruct = {0};
   if(hcan->Instance==CAN1)
   {
-  /* USER CODE BEGIN CAN1_MspInit 0 */
+    /* USER CODE BEGIN CAN1_MspInit 0 */
 
-  /* USER CODE END CAN1_MspInit 0 */
+    /* USER CODE END CAN1_MspInit 0 */
     /* Peripheral clock enable */
     HAL_RCC_CAN1_CLK_ENABLED++;
     if(HAL_RCC_CAN1_CLK_ENABLED==1){
@@ -114,15 +114,15 @@ void HAL_CAN_MspInit(CAN_HandleTypeDef* hcan)
     /* CAN1 interrupt Init */
     HAL_NVIC_SetPriority(CAN1_RX0_IRQn, 0, 0);
     HAL_NVIC_EnableIRQ(CAN1_RX0_IRQn);
-  /* USER CODE BEGIN CAN1_MspInit 1 */
+    /* USER CODE BEGIN CAN1_MspInit 1 */
 
-  /* USER CODE END CAN1_MspInit 1 */
+    /* USER CODE END CAN1_MspInit 1 */
   }
   else if(hcan->Instance==CAN2)
   {
-  /* USER CODE BEGIN CAN2_MspInit 0 */
+    /* USER CODE BEGIN CAN2_MspInit 0 */
 
-  /* USER CODE END CAN2_MspInit 0 */
+    /* USER CODE END CAN2_MspInit 0 */
     /* Peripheral clock enable */
     __HAL_RCC_CAN2_CLK_ENABLE();
     HAL_RCC_CAN1_CLK_ENABLED++;
@@ -145,26 +145,26 @@ void HAL_CAN_MspInit(CAN_HandleTypeDef* hcan)
     /* CAN2 interrupt Init */
     HAL_NVIC_SetPriority(CAN2_TX_IRQn, 0, 0);
     HAL_NVIC_EnableIRQ(CAN2_TX_IRQn);
-  /* USER CODE BEGIN CAN2_MspInit 1 */
+    /* USER CODE BEGIN CAN2_MspInit 1 */
 
-  /* USER CODE END CAN2_MspInit 1 */
+    /* USER CODE END CAN2_MspInit 1 */
   }
 
 }
 
 /**
-* @brief CAN MSP De-Initialization
-* This function freeze the hardware resources used in this example
-* @param hcan: CAN handle pointer
-* @retval None
-*/
+  * @brief CAN MSP De-Initialization
+  * This function freeze the hardware resources used in this example
+  * @param hcan: CAN handle pointer
+  * @retval None
+  */
 void HAL_CAN_MspDeInit(CAN_HandleTypeDef* hcan)
 {
   if(hcan->Instance==CAN1)
   {
-  /* USER CODE BEGIN CAN1_MspDeInit 0 */
+    /* USER CODE BEGIN CAN1_MspDeInit 0 */
 
-  /* USER CODE END CAN1_MspDeInit 0 */
+    /* USER CODE END CAN1_MspDeInit 0 */
     /* Peripheral clock disable */
     HAL_RCC_CAN1_CLK_ENABLED--;
     if(HAL_RCC_CAN1_CLK_ENABLED==0){
@@ -179,15 +179,15 @@ void HAL_CAN_MspDeInit(CAN_HandleTypeDef* hcan)
 
     /* CAN1 interrupt DeInit */
     HAL_NVIC_DisableIRQ(CAN1_RX0_IRQn);
-  /* USER CODE BEGIN CAN1_MspDeInit 1 */
+    /* USER CODE BEGIN CAN1_MspDeInit 1 */
 
-  /* USER CODE END CAN1_MspDeInit 1 */
+    /* USER CODE END CAN1_MspDeInit 1 */
   }
   else if(hcan->Instance==CAN2)
   {
-  /* USER CODE BEGIN CAN2_MspDeInit 0 */
+    /* USER CODE BEGIN CAN2_MspDeInit 0 */
 
-  /* USER CODE END CAN2_MspDeInit 0 */
+    /* USER CODE END CAN2_MspDeInit 0 */
     /* Peripheral clock disable */
     __HAL_RCC_CAN2_CLK_DISABLE();
     HAL_RCC_CAN1_CLK_ENABLED--;
@@ -203,54 +203,54 @@ void HAL_CAN_MspDeInit(CAN_HandleTypeDef* hcan)
 
     /* CAN2 interrupt DeInit */
     HAL_NVIC_DisableIRQ(CAN2_TX_IRQn);
-  /* USER CODE BEGIN CAN2_MspDeInit 1 */
+    /* USER CODE BEGIN CAN2_MspDeInit 1 */
 
-  /* USER CODE END CAN2_MspDeInit 1 */
+    /* USER CODE END CAN2_MspDeInit 1 */
   }
 
 }
 
 /**
-* @brief TIM_Base MSP Initialization
-* This function configures the hardware resources used in this example
-* @param htim_base: TIM_Base handle pointer
-* @retval None
-*/
+  * @brief TIM_Base MSP Initialization
+  * This function configures the hardware resources used in this example
+  * @param htim_base: TIM_Base handle pointer
+  * @retval None
+  */
 void HAL_TIM_Base_MspInit(TIM_HandleTypeDef* htim_base)
 {
   if(htim_base->Instance==TIM3)
   {
-  /* USER CODE BEGIN TIM3_MspInit 0 */
+    /* USER CODE BEGIN TIM3_MspInit 0 */
 
-  /* USER CODE END TIM3_MspInit 0 */
+    /* USER CODE END TIM3_MspInit 0 */
     /* Peripheral clock enable */
     __HAL_RCC_TIM3_CLK_ENABLE();
-  /* USER CODE BEGIN TIM3_MspInit 1 */
+    /* USER CODE BEGIN TIM3_MspInit 1 */
 
-  /* USER CODE END TIM3_MspInit 1 */
+    /* USER CODE END TIM3_MspInit 1 */
 
   }
 
 }
 
 /**
-* @brief TIM_Base MSP De-Initialization
-* This function freeze the hardware resources used in this example
-* @param htim_base: TIM_Base handle pointer
-* @retval None
-*/
+  * @brief TIM_Base MSP De-Initialization
+  * This function freeze the hardware resources used in this example
+  * @param htim_base: TIM_Base handle pointer
+  * @retval None
+  */
 void HAL_TIM_Base_MspDeInit(TIM_HandleTypeDef* htim_base)
 {
   if(htim_base->Instance==TIM3)
   {
-  /* USER CODE BEGIN TIM3_MspDeInit 0 */
+    /* USER CODE BEGIN TIM3_MspDeInit 0 */
 
-  /* USER CODE END TIM3_MspDeInit 0 */
+    /* USER CODE END TIM3_MspDeInit 0 */
     /* Peripheral clock disable */
     __HAL_RCC_TIM3_CLK_DISABLE();
-  /* USER CODE BEGIN TIM3_MspDeInit 1 */
+    /* USER CODE BEGIN TIM3_MspDeInit 1 */
 
-  /* USER CODE END TIM3_MspDeInit 1 */
+    /* USER CODE END TIM3_MspDeInit 1 */
   }
 
 }
